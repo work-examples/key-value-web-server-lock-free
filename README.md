@@ -70,6 +70,7 @@ def stats() -> StatsResponse
 ```
 
 Get server statistics. The `StatsResponse` type should include:
+
 - total number of `get` operations
 - number of successful `get` operations
 - number of failed `get` operations
