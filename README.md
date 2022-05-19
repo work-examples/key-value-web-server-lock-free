@@ -1,7 +1,7 @@
 # Lock-free Key-Value Web Server [![Code license](https://img.shields.io/github/license/work-examples/key-value-web-server-lock-free)](LICENSE)
 
 **Example project:** An HTTP web server with a REST API for key-value storage.
-Collects read statistics. Internal data structure is lock-free.
+Internal data structure is lock-free. Server collects request statistics.
 
 **Language**: `C++17`  
 **Dependencies**: `Boost v1.78.0`, `RapidJSON v1.1.0-b557259-p0`, `CrowCpp v1.0+2`, `PyInstaller` (optional)  
@@ -41,51 +41,52 @@ You need to write two applications, a client and a server, that communicate with
 
 ### Server
 
-The server has a configuration file on disk (`config.txt`). It stores key/value data.
-You can use any format. At startup, the server reads the configuration file.
-The server has 2 commands `get` and `set`.
-The first command gets the value by the key, the second one sets it.
+Applications will use a simple dictionary access protocol, defined bellow.
+The server must be implemented using TCP.
 
-Command format: `$get <key>, $set <key>=<value>`
+Any serialization method may be used: `FlatBuffers`, `Protocol Buffers`, `Json`, etc.
 
-Recording a value must be accompanied by updating the file on disk.
-You can update it not immediately, but periodically.
-It is desirable to write to a file in a separate thread.
-The server supports an arbitrary number of clients.
-The server must be multithreaded, i.e. commands must be processed in parallel.
-Reading should occur with minimal delay. We believe that the record is a rare situation.
-The server should keep statistics of requests, and output to the console every 5 seconds
-how many requests it has completed in total and in the last 5 seconds.
-Optionally implement the calculation of access statistics for each key,
-return this statistics to any of the commands as a result, for example:
+The implementation should be non-blocking. Libraries such as `libuv` or `boost` may be used.
 
-```text
-$get tree
+The following operations should be supported:
+
+```python
+def get(key: string) -> GetResponse
 ```
 
-Result:
+Search the specified key and return `GetResponse` structure back.
+The `GetResponse` type contains the value found in the dictionary for the specified key in case of success.
+In case of error it will contain the reason behind it.
 
-```text
-tree=Blue
-reads=10
-writes=1
+```python
+def set(key: string, value: string) -> SetResponse
 ```
 
-When developing, you can use third-party libraries for parsing and for the network.
-For example `rapidjson`, `boost` etc.
+Set values in the dictionary for the specified key.
+In case of error the `SetResponse` will contain the reason behind it.
+
+```python
+def stats() -> StatsResponse
+```
+
+Get server statistics. The `StatsResponse` type should include:
+- total number of `get` operations
+- number of successful `get` operations
+- number of failed `get` operations
+
+The following features are optional for the task implementation:
+
+| Optional feature | Description                                                                                                                   |
+|------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| Bloom filter     | Minimize number of accesses to the dictionary during `get` operations. This feature should be possible to disable in startup. |
+| Benchmark        | Design a benchmark to measure the latency and throughput of the server.                                                       |
 
 <a name="description_client"></a>
 
 ### Client Application
 
-Single threaded. Connects to the server, then selects a random key
-from the hardcoded list and executes `$get` on the server with a 99% probability,
-and in 1% of cases writes random data to this key by executing `$set`.
-The results of command execution are written to the console.
-This is repeated in a loop 10K times (without breaking the connection) and the application terminates.
-Optionally make reconnect to the server in case of a disconnection, or if the server is offline,
-i.e. the client waits until it appears on the network.
-The client can be written in any language, even in Python.
+A client application should also be implemented in order to test the server.
+The client should be a basic library that allows concurrent requests to the server.
 
 <a name="implementation_remarks"></a>
 
@@ -158,8 +159,8 @@ The solution also makes heavy use of move semantics.
 Database file example:
 [database.example.json](database.example.json)
 
-Client application is run this way. It needs python3 and has no external dependencies.
-CI is also preparing `Client.exe` executable which is a compiled version of `client.py` with Python inside.
+Client application is run the following way. It needs python3 and has no external dependencies.
+CI is also preparing `Client.exe` executable which is a compiled version of `client.py` with Python interpreter inside.
 
 ```bash
 python3 client.py
@@ -224,6 +225,14 @@ Reply body example:
     "total": 123,
     "succeeded": 100,
     "failed": 23
+}
+```
+
+In case of error all API endpoints return HTTP error code 4xx or 5xx and the special reply format in the body:
+
+```json
+{
+    "error_description": "The key was not found"
 }
 ```
 
