@@ -1,11 +1,11 @@
-# Key-Value Web Server [![Code license](https://img.shields.io/github/license/work-examples/key-value-web-server-lock-free)](LICENSE)
+# Lock-free Key-Value Web Server [![Code license](https://img.shields.io/github/license/work-examples/key-value-web-server-lock-free)](LICENSE)
 
-**Example project:** An HTTP web server with a REST API for persistent key-value storage.
-Collects read-write statistics for the entire storage and for each key.
+**Example project:** An HTTP web server with a REST API for key-value storage.
+Collects read statistics. Internal data structure is lock-free.
 
 **Language**: `C++17`  
 **Dependencies**: `Boost v1.78.0`, `RapidJSON v1.1.0-b557259-p0`, `CrowCpp v1.0+2`, `PyInstaller` (optional)  
-**Software requirements**: `CMake 3.2+`, C++17 compatible compiler, `Python 3.7+`  
+**Software requirements**: `CMake 3.19+`, C++17 compatible compiler, `Python 3.7+`  
 **Operation systems**: `Windows`, `Linux`, `macOS`
 
 | Branch      | CI Build Status                                                                                                                                                                                                                                                      | CodeQL Code Analysis                                                                                                                                                                                                                                                                         | Microsoft C++ Code Analysis                                                                                                                                                                                                                                                   |
@@ -26,6 +26,7 @@ Collects read-write statistics for the entire storage and for each key.
 - [Web API](#web_api)
   - [Get Value](#api_get_value)
   - [Set Value](#api_set_value)
+  - [Get Statistics](#api_get_statistics)
 - [Benchmark](#benchmark)
   - [Testing Environment](#benchmark_environment)
   - [Results](#benchmark_results)
@@ -184,9 +185,7 @@ Reply body example:
 ```json
 {
     "name": "name 1",
-    "value": "my value",
-    "stats.reads": 2,
-    "stats.writes": 1
+    "value": "my value"
 }
 ```
 
@@ -209,6 +208,22 @@ Reply body example:
 ```json
 {
     "name": "name 1"
+}
+```
+
+<a name="api_get_statistics"></a>
+
+### Get Statistics Value
+
+`GET` <http://127.0.0.1:8000/api/statistics/reads>
+
+Reply body example:
+
+```json
+{
+    "total": 123,
+    "succeeded": 100,
+    "failed": 23
 }
 ```
 
