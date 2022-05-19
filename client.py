@@ -13,20 +13,23 @@ import urllib.parse
 CONNECT_HOST = '127.0.0.1'
 CONNECT_PORT = 8000
 
-VALUE_NAMES = [
-    'name',
-    'name2',
-    'name 3',
-    'name #4',
-    'another',
-    'non-existent',
-    *[f'name_{x}' for x in range(100_000)],
+MAX_COUNT_OF_DB_RECORDS = 1_000_000
+
+PERCENT_OF_WRITES = 10
+PERCENT_OF_FOUND_READS = 10
+PERCENT_OF_NOT_FOUND_READS = 100 - PERCENT_OF_WRITES - PERCENT_OF_FOUND_READS
+
+WRITE_VALUE_NAMES = [
+    *[f'name_{x}' for x in range(MAX_COUNT_OF_DB_RECORDS)],
+]
+
+NOT_FOUND_VALUE_NAMES = [
+    *[f'name_{x}' for x in range(MAX_COUNT_OF_DB_RECORDS, 2 * MAX_COUNT_OF_DB_RECORDS)],
 ]
 
 COUNT_OF_OPERATIONS_PER_PROCESS = 10_000
-COUNT_OF_PROCESSES = 1  # multiprocessing.cpu_count()
+COUNT_OF_PROCESSES = multiprocessing.cpu_count()
 
-PERCENT_OF_WRITES = 1
 
 arg1 = sys.argv[1] if len(sys.argv) > 1 else ''
 
@@ -38,9 +41,12 @@ LOG_EVERY_REQUEST = arg1 != '--no-logs'
 
 def one_request(conn: http.client.HTTPConnection) -> None:
     rand = random.randint(1, 100)
+
     writing = (rand <= PERCENT_OF_WRITES)
 
-    name = random.choice(VALUE_NAMES)
+    read_404 = (0 < (rand - PERCENT_OF_WRITES) <= PERCENT_OF_NOT_FOUND_READS)
+
+    name = random.choice(WRITE_VALUE_NAMES) if read_404 else random.choice(WRITE_VALUE_NAMES)
     url = '/api/records/' + urllib.parse.quote_plus(name)
 
     headers_get = {
@@ -54,7 +60,7 @@ def one_request(conn: http.client.HTTPConnection) -> None:
     while True:  # retry connection loop
         try:
             if writing:
-                new_value = f'val_{random.randint(1000, 1000_000_000)}'
+                new_value = f'val_{random.randint(1000, 1_000_000_000)}'
 
                 data = {"value": new_value}
 
