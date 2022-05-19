@@ -9,8 +9,8 @@ project(Crow
 )
 
 # Set required C++ standard
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+# set(CMAKE_CXX_STANDARD 11)
+# set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 # Default to build type "Release" unless tests are being built
 if(NOT CMAKE_BUILD_TYPE)
@@ -36,7 +36,7 @@ target_include_directories(Crow
         $<INSTALL_INTERFACE:include>
 )
 
-find_package(Boost 1.64 COMPONENTS system date_time REQUIRED)
+find_package(Boost COMPONENTS system date_time REQUIRED)
 message(VERBOSE "Boost_VERSION: ${Boost_VERSION}")
 
 find_package(Threads REQUIRED)
