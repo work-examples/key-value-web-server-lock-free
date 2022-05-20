@@ -1,48 +1,78 @@
 #include "DataEngine.h"
 
 
-std::optional<std::string> DataEngine::get(const std::string_view name) const
+DataEngine::DataEngine(const size_t bucketCount):
+    m_buckets(bucketCount)
 {
-    const std::string strName(name);
-
-    const std::shared_lock lock(m_protectData); // read-only lock
-
-    const auto iter = m_data.find(strName);
-    if (iter == m_data.cend())
-    {
-        m_failedReads.fetch_add(1, std::memory_order_acq_rel);
-        return {};
-    }
-
-    m_successReads.fetch_add(1, std::memory_order_acq_rel);
-
-    return iter->second;
 }
 
-void DataEngine::set(const std::string_view name, const std::string_view value)
+DataEngine::~DataEngine()
 {
-    std::string strName(name);
-
-    const std::lock_guard lock(m_protectData); // write lock
-
-    const auto iter = m_data.find(strName);
-    if (iter == m_data.cend())
+    for (ListNode* node : m_buckets)
     {
-        m_data.emplace(std::move(strName), value);
+        while (node != nullptr)
+        {
+            ListNode* current = node;
+            node = node->next;
+            delete current;
+        }
     }
-    else
+    m_buckets.clear();
+}
+
+std::optional<std::string> DataEngine::get(const std::string_view key) const
+{
+    const size_t buckedIdx = m_hash(key) % m_buckets.size();
+    ListNode* node = m_buckets[buckedIdx];
+    while (node != nullptr)
     {
-        iter->second = value;
+        if (node->key == key)
+        {
+            m_successReads.fetch_add(1, std::memory_order_acq_rel);
+            return *node->value;
+        }
+        node = node->next;
+    }
+    m_failedReads.fetch_add(1, std::memory_order_acq_rel);
+    return {};
+}
+
+void DataEngine::set(const std::string_view key, const std::string_view value)
+{
+    const size_t buckedIdx = m_hash(key) % m_buckets.size();
+    ListNode* node = m_buckets[buckedIdx];
+
+    if (node == nullptr)
+    {
+        m_buckets[buckedIdx] = new ListNode{ std::string(key), std::make_shared<std::string>(value), nullptr };
+        return;
+    }
+
+    while (true)
+    {
+        if (node->key == key)
+        {
+            *node->value = value;
+            return;
+        }
+        if (node->next == nullptr)
+        {
+            node->next = new ListNode{std::string(key), std::make_shared<std::string>(value), nullptr};
+            return;
+        }
+        node = node->next;
     }
 }
 
 void DataEngine::enumerate(const std::function<EnumerateVisitorProc>& visitor) const
 {
-    const std::shared_lock lock(m_protectData); // read-only lock
-
-    for (const auto& name_value : m_data)
+    for (ListNode* node : m_buckets)
     {
-        visitor(name_value.first, name_value.second);
+        while (node != nullptr)
+        {
+            visitor(node->key, *node->value);
+            node = node->next;
+        }
     }
 }
 

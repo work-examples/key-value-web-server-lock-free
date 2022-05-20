@@ -3,11 +3,11 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
-#include <shared_mutex>
 #include <string>
 #include <string_view>
-#include <unordered_map>
+#include <vector>
 
 
 class DataEngine
@@ -22,21 +22,29 @@ public:
     };
 
 public:
-    std::optional<std::string> get(const std::string_view name) const;
+    DataEngine(const size_t bucketCount);
+    ~DataEngine();
 
-    void set(const std::string_view name, const std::string_view value);
+    std::optional<std::string> get(const std::string_view key) const;
 
-    using EnumerateVisitorProc = void(const std::string_view name, const std::string_view value);
+    void set(const std::string_view key, const std::string_view value);
+
+    using EnumerateVisitorProc = void(const std::string_view key, const std::string_view value);
 
     void enumerate(const std::function<EnumerateVisitorProc>& visitor) const;
 
     AccessStatistics get_read_statistics() const;
 
 protected:
-    using DataCollection = std::unordered_map<std::string, std::string>;
+    struct ListNode
+    {
+        std::string                     key;
+        std::shared_ptr<std::string>    value;
+        std::atomic<ListNode*>          next = ATOMIC_VAR_INIT(nullptr);
+    };
 
-    mutable std::shared_mutex   m_protectData;
-    DataCollection              m_data;
+    std::vector<std::atomic<ListNode*>> m_buckets;
+    std::hash<std::string_view>         m_hash;
 
     // Global statistics:
     mutable std::atomic<IntegerCounter> m_successReads = ATOMIC_VAR_INIT(0);
