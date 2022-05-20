@@ -125,8 +125,14 @@ Finally, I settled on `CrowCpp`.
 
 ### Other Implementation Features
 
-The heart of the server engine uses `std::shared_mutex
-to optimize performance for many readers and single writer.
+The heart of the server engine uses fixed-size bucket array
+and single-linked list inside each bucket.
+This structure allows very simple implementation of searching and adding new elements.
+Without delete operation we can implement these operations lock-free without traditional loops.
+So the **maximum** complexity for operations would be:
+
+- search time: O(1 + length(corresponding bucket list))
+- insertion time: O(1 + length(corresponding bucket list))
 
 Web server statistics values are only protected by `std::atomic`,
 which allows small inconsistency between different values.
