@@ -48,28 +48,40 @@ std::optional<std::string> DataEngine::get(const std::string_view key) const
 
 void DataEngine::set(const std::string_view key, const std::string_view value)
 {
-    const size_t buckedIdx = m_hash(key) % m_buckets.size();
-    ListNode* node = m_buckets[buckedIdx].load(std::memory_order_acquire);
+    std::unique_ptr<ListNode> ptrNewNode = std::unique_ptr<ListNode>(
+        new ListNode{ std::string(key), std::make_shared<const std::string>(value), nullptr }
+    );
 
-    if (node == nullptr)
+    const size_t buckedIdx = m_hash(key) % m_buckets.size();
+    ListNode* node = nullptr;
+
+    const bool exchangedFirst = m_buckets[buckedIdx].compare_exchange_strong(node, ptrNewNode.get(), std::memory_order_acq_rel, std::memory_order_acquire);
+    if (exchangedFirst)
     {
-        m_buckets[buckedIdx].store(new ListNode{ std::move(std::string(key)), std::move(std::make_shared<const std::string>(value)), nullptr }, std::memory_order_release);
+        // we have put the first element in the bucket
+        ptrNewNode.release(); // do not own the node any more. Its owner is the bucket list now.
         return;
     }
+    assert(node != nullptr);
 
     while (true)
     {
         if (node->m_key == key)
         {
-            node->m_ptrValue.store(std::make_shared<const std::string>(value), std::memory_order_release);
-            return;
+            node->m_ptrValue.store(ptrNewNode->m_ptrValue, std::memory_order_release);
+            return; // ptrNewNode is deallocated automatically here
         }
-        if (node->m_next == nullptr)
+
+        ListNode* nextNode = nullptr;
+        const bool exchanged = node->m_next.compare_exchange_strong(nextNode, ptrNewNode.get(), std::memory_order_acq_rel, std::memory_order_acquire);
+        if (exchanged)
         {
-            node->m_next.store(new ListNode{std::move(std::string(key)), std::move(std::make_shared<const std::string>(value)), nullptr}, std::memory_order_release);
+            // we have put the element at the end of the bucket list
+            ptrNewNode.release(); // do not own the node any more. Its owner is the bucket list now.
             return;
         }
-        node = node->m_next.load(std::memory_order_acquire);
+        assert(nextNode != nullptr);
+        node = nextNode;
     }
 }
 
