@@ -91,16 +91,14 @@ void HttpServer::setup_routing(DataEngine& engine)
                     return crow::response(crow::status::BAD_REQUEST, body);
                 }
 
-                const std::optional<DataEngine::ExtendedValue> value = engine.get(name);
+                const std::optional<std::string> value = engine.get(name);
                 if (!value.has_value())
                 {
                     body.add("error"sv, "Item not found"sv);
                     return crow::response(crow::status::NOT_FOUND, body);
                 }
 
-                body.add("value"sv, value->m_value);
-                body.add("stats.reads"sv, value->m_stats.m_reads);
-                body.add("stats.writes"sv, value->m_stats.m_writes);
+                body.add("value"sv, *value);
                 return crow::response(crow::status::OK, body);
             }
             catch (...)
@@ -174,6 +172,28 @@ void HttpServer::setup_routing(DataEngine& engine)
         []()
         {
             return crow::response(crow::status::NOT_IMPLEMENTED, "txt", "Item listing is not supported");
+        }
+    );
+
+    CROW_ROUTE(app, "/api/statistics/reads")(
+        [&engine]()
+        {
+            using namespace std::literals;
+            HttpServerHelpers::JsonBody body;
+            try
+            {
+                const auto reads = engine.get_read_statistics();
+                body.add("total"sv, reads.m_successOperations + reads.m_failedOperations);
+                body.add("succeeded"sv, reads.m_successOperations);
+                body.add("failed"sv, reads.m_failedOperations);
+
+                return crow::response(crow::status::OK, body);
+            }
+            catch (...)
+            {
+                body.add("error"sv, "Server internal error"sv);
+                return crow::response(crow::status::INTERNAL_SERVER_ERROR, body);
+            }
         }
     );
 

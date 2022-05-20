@@ -1,7 +1,7 @@
 #include "DataEngine.h"
 
 
-std::optional<DataEngine::ExtendedValue> DataEngine::get(const std::string_view name) const
+std::optional<std::string> DataEngine::get(const std::string_view name) const
 {
     const std::string strName(name);
 
@@ -10,17 +10,13 @@ std::optional<DataEngine::ExtendedValue> DataEngine::get(const std::string_view 
     const auto iter = m_data.find(strName);
     if (iter == m_data.cend())
     {
-        m_reads.fetch_add(1, std::memory_order_acq_rel);
+        m_failedReads.fetch_add(1, std::memory_order_acq_rel);
         return {};
     }
 
-    // Potentially we can get small inconsistency while copying different statistics values. It is acceptable.
-    const auto reads = iter->second.m_reads.fetch_add(1, std::memory_order_acq_rel) + 1;
-    const auto writes = iter->second.m_writes.load(std::memory_order_acquire);
+    m_successReads.fetch_add(1, std::memory_order_acq_rel);
 
-    m_reads.fetch_add(1, std::memory_order_acq_rel);
-
-    return { std::move(ExtendedValue{iter->second.m_value, {reads, writes}}) };
+    return iter->second;
 }
 
 void DataEngine::initial_set(const std::string_view name, const std::string_view value)
@@ -32,12 +28,11 @@ void DataEngine::initial_set(const std::string_view name, const std::string_view
     const auto iter = m_data.find(strName);
     if (iter == m_data.cend())
     {
-        ExtendedValueInternal extended{ std::string(value), 0, 0 };
-        m_data.emplace(std::move(strName), std::move(extended));
+        m_data.emplace(std::move(strName), value);
     }
     else
     {
-        iter->second.m_value = value;
+        iter->second = value;
     }
 }
 
@@ -50,16 +45,12 @@ void DataEngine::set(const std::string_view name, const std::string_view value)
     const auto iter = m_data.find(strName);
     if (iter == m_data.cend())
     {
-        ExtendedValueInternal extended{ std::string(value), 0, 1 };
-        m_data.emplace(std::move(strName), std::move(extended));
+        m_data.emplace(std::move(strName), value);
     }
     else
     {
-        iter->second.m_writes.fetch_add(1, std::memory_order_acq_rel);
-        iter->second.m_value = value;
+        iter->second = value;
     }
-
-    m_writes.fetch_add(1, std::memory_order_acq_rel);
 }
 
 void DataEngine::enumerate(const std::function<EnumerateVisitorProc>& visitor) const
@@ -68,12 +59,12 @@ void DataEngine::enumerate(const std::function<EnumerateVisitorProc>& visitor) c
 
     for (const auto& name_value : m_data)
     {
-        visitor(name_value.first, name_value.second.m_value);
+        visitor(name_value.first, name_value.second);
     }
 }
 
-DataEngine::AccessStatistics DataEngine::get_global_statistics() const
+DataEngine::AccessStatistics DataEngine::get_read_statistics() const
 {
     // No need in full consistency here
-    return { m_reads.load(std::memory_order_acquire), m_writes.load(std::memory_order_acquire) };
+    return { m_successReads.load(std::memory_order_acquire), m_failedReads.load(std::memory_order_acquire) };
 }

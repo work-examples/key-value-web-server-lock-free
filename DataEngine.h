@@ -17,18 +17,12 @@ public:
 
     struct AccessStatistics
     {
-        IntegerCounter          m_reads = 0;
-        IntegerCounter          m_writes = 0;
-    };
-
-    struct ExtendedValue
-    {
-        std::string             m_value;
-        AccessStatistics        m_stats;
+        IntegerCounter  m_successOperations = 0;
+        IntegerCounter  m_failedOperations = 0;
     };
 
 public:
-    std::optional<ExtendedValue> get(const std::string_view name) const;
+    std::optional<std::string> get(const std::string_view name) const;
 
     void initial_set(const std::string_view name, const std::string_view value); // no statistics update
     void set(const std::string_view name, const std::string_view value);
@@ -37,7 +31,7 @@ public:
 
     void enumerate(const std::function<EnumerateVisitorProc>& visitor) const;
 
-    AccessStatistics get_global_statistics() const;
+    AccessStatistics get_read_statistics() const;
 
 protected:
     class AtomicCounter : public std::atomic<IntegerCounter>
@@ -55,18 +49,12 @@ protected:
         }
     };
 
-    struct ExtendedValueInternal
-    {
-        std::string             m_value;
-        mutable AtomicCounter   m_reads  = ATOMIC_VAR_INIT(0);
-        AtomicCounter           m_writes = ATOMIC_VAR_INIT(0);
-    };
+    using DataCollection = std::unordered_map<std::string, std::string>;
 
-    using DataCollection = std::unordered_map<std::string, ExtendedValueInternal>;
     mutable std::shared_mutex   m_protectData;
     DataCollection              m_data;
 
     // Global statistics:
-    mutable std::atomic<IntegerCounter> m_reads  = ATOMIC_VAR_INIT(0);
-    std::atomic<IntegerCounter>         m_writes = ATOMIC_VAR_INIT(0);
+    mutable std::atomic<IntegerCounter> m_successReads  = ATOMIC_VAR_INIT(0);
+    mutable std::atomic<IntegerCounter> m_failedReads = ATOMIC_VAR_INIT(0);
 };
