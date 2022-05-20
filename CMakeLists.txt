@@ -57,28 +57,25 @@ message(VERBOSE "RapidJSON_VERSION: ${RapidJSON_VERSION}")
 
 set(SOURCES
     main.cpp
-    BackgroundWorker.cpp
     DataEngine.cpp
     DataSerializer.cpp
     Logger.cpp
     HttpServer.cpp
     HttpServerHelpers.cpp
-    StatisticsPrinter.cpp
+    Persistency.cpp
 )
 
 set(HEADERS
-    BackgroundWorker.h
     DataEngine.h
     DataSerializer.h
     Logger.h
     HttpServer.h
     HttpServerHelpers.h
-    StatisticsPrinter.h
+    Persistency.h
 )
 
 set(UTILS_HEADERS
     utils/stdlib.h
-    utils/stl.h
 )
 
 set(CMAKE_FILES
