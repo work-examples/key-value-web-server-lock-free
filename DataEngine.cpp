@@ -19,23 +19,6 @@ std::optional<std::string> DataEngine::get(const std::string_view name) const
     return iter->second;
 }
 
-void DataEngine::initial_set(const std::string_view name, const std::string_view value)
-{
-    std::string strName(name);
-
-    const std::shared_lock lock(m_protectData); // read-only lock
-
-    const auto iter = m_data.find(strName);
-    if (iter == m_data.cend())
-    {
-        m_data.emplace(std::move(strName), value);
-    }
-    else
-    {
-        iter->second = value;
-    }
-}
-
 void DataEngine::set(const std::string_view name, const std::string_view value)
 {
     std::string strName(name);

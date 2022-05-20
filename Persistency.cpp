@@ -10,7 +10,7 @@ size_t Persistency::initial_load_data(DataEngine& engine, const std::string& dat
     size_t recordCount = 0;
     auto loadVisitor = [&engine, &recordCount](const std::string_view name, const std::string_view value)
     {
-        engine.initial_set(name, value);
+        engine.set(name, value);
         ++recordCount;
         return;
     };

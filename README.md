@@ -131,8 +131,8 @@ This structure allows very simple implementation of searching and adding new ele
 Without delete operation we can implement these operations lock-free without traditional loops.
 So the **maximum** complexity for operations would be:
 
-- search time: O(1 + length(corresponding bucket list))
-- insertion time: O(1 + length(corresponding bucket list))
+- search time: `O(1 + length(corresponding bucket list))`
+- insertion time: `O(1 + length(corresponding bucket list))`
 
 Web server statistics values are only protected by `std::atomic`,
 which allows small inconsistency between different values.
@@ -239,7 +239,7 @@ In case of error all API endpoints return HTTP error code 4xx or 5xx and the spe
 
 ```json
 {
-    "error_description": "The key was not found"
+    "error": "The key was not found"
 }
 ```
 

@@ -73,6 +73,15 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "Get Read Statistics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/statistics/reads"
+      },
+      "response": []
     }
   ],
   "event": [
