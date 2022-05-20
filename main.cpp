@@ -33,7 +33,7 @@ int main(const int argc, const char* const* const argv)
 
     DataEngine engine(hashMapBucketCount);
 
-    LOG_INFO << "main: load data" << std::endl;
+    LOG_INFO << "main: load data..." << std::endl;
     const size_t loadedRecordCount = Persistency::initial_load_data(engine, databaseFilename);
     LOG_INFO << "main: loaded " << loadedRecordCount << " DB records from file " << databaseFilename << std::endl;
 
@@ -46,7 +46,7 @@ int main(const int argc, const char* const* const argv)
         LOG_INFO << "main: listening connections: end" << std::endl;
     }
 
-    LOG_INFO << "main: save data to file before process exit" << std::endl;
+    LOG_INFO << "main: save data to file before process exit..." << std::endl;
     const size_t savedRecordCount = Persistency::store_data(engine, databaseFilename);
     LOG_INFO << "main: saved " << savedRecordCount << " DB records to file " << databaseFilename << std::endl;
 

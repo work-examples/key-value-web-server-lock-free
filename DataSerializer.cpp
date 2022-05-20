@@ -9,6 +9,7 @@
 #include "rapidjson/writer.h"
 
 #include <cstdio>
+#include <filesystem>
 
 
 #ifdef _MSC_VER
@@ -49,9 +50,14 @@ const DataSerializerDocument& DataSerializer::Document::get_internal_document() 
     return *m_ptrDocument;
 }
 
-
 bool DataSerializer::load(const std::string& filename, const std::function<ItemVisitorProc>& visitor)
 {
+    if (!std::filesystem::exists(filename))
+    {
+        LOG_WARN << "Loading file was not found: " << filename << std::endl;
+        return true;
+    }
+
     stdlib_extra::FileOwner file(std::fopen(filename.c_str(), "rb"));
     if (file.m_file == nullptr)
     {

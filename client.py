@@ -9,6 +9,8 @@ import time
 import urllib.parse
 
 # =======================================
+# === CONFIG:
+# =======================================
 
 CONNECT_HOST = '127.0.0.1'
 CONNECT_PORT = 8000
@@ -19,6 +21,13 @@ PERCENT_OF_WRITES = 10
 PERCENT_OF_FOUND_READS = 10
 PERCENT_OF_NOT_FOUND_READS = 100 - PERCENT_OF_WRITES - PERCENT_OF_FOUND_READS
 
+COUNT_OF_OPERATIONS_PER_PROCESS = 10_000
+COUNT_OF_PROCESSES = multiprocessing.cpu_count()
+
+arg1 = sys.argv[1] if len(sys.argv) > 1 else ''
+
+LOG_EVERY_REQUEST = arg1 != '--no-logs'
+
 WRITE_VALUE_NAMES = [
     *[f'name_{x}' for x in range(MAX_COUNT_OF_DB_RECORDS)],
 ]
@@ -26,15 +35,6 @@ WRITE_VALUE_NAMES = [
 NOT_FOUND_VALUE_NAMES = [
     *[f'name_{x}' for x in range(MAX_COUNT_OF_DB_RECORDS, 2 * MAX_COUNT_OF_DB_RECORDS)],
 ]
-
-COUNT_OF_OPERATIONS_PER_PROCESS = 10_000
-COUNT_OF_PROCESSES = multiprocessing.cpu_count()
-
-
-arg1 = sys.argv[1] if len(sys.argv) > 1 else ''
-
-LOG_EVERY_REQUEST = arg1 != '--no-logs'
-
 
 # =======================================
 

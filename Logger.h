@@ -35,6 +35,7 @@ protected:
     static LogLevel m_minLogLevel;
 };
 
+
 class LogStream
 {
 public:
@@ -100,5 +101,6 @@ private:
 
 
 #define LOG_DEBUG  LogStream(Logger::LogLevel::Debug)
-#define LOG_INFO  LogStream(Logger::LogLevel::Info)
-#define LOG_ERROR LogStream(Logger::LogLevel::Error)
+#define LOG_INFO   LogStream(Logger::LogLevel::Info)
+#define LOG_WARN   LogStream(Logger::LogLevel::Warning)
+#define LOG_ERROR  LogStream(Logger::LogLevel::Error)

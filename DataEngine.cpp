@@ -35,7 +35,7 @@ std::optional<std::string> DataEngine::get(const std::string_view key) const
         {
             m_successReads.fetch_add(1, std::memory_order_acq_rel);
 
-            const auto ptrValueCopy = node->get_value_copy();
+            const auto ptrValueCopy = node->get_value_copy_ref();
             return *ptrValueCopy;
         }
 
@@ -81,7 +81,7 @@ void DataEngine::enumerate(const std::function<EnumerateVisitorProc>& visitor) c
 
         while (node != nullptr)
         {
-            const auto ptrValueCopy = node->get_value_copy();
+            const auto ptrValueCopy = node->get_value_copy_ref();
 
             visitor(node->m_key, *ptrValueCopy);
 

@@ -38,15 +38,16 @@ public:
     AccessStatistics get_read_statistics() const;
 
 protected:
-    struct ListNode
+    class ListNode
     {
-        using SafeSharedStringPtr = std::atomic<std::shared_ptr<const std::string>>;
+    public:
+        using AtomicSharedConstStringPtr = std::atomic<std::shared_ptr<const std::string>>;
 
         const std::string               m_key;
-        SafeSharedStringPtr             m_ptrValue;
+        AtomicSharedConstStringPtr      m_ptrValue;
         std::atomic<ListNode*>          m_next = ATOMIC_VAR_INIT(nullptr);
 
-        std::shared_ptr<const std::string> get_value_copy() const
+        std::shared_ptr<const std::string> get_value_copy_ref() const
         {
             return m_ptrValue.load(std::memory_order_acquire);
         }
