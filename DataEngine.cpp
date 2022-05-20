@@ -1,5 +1,7 @@
 #include "DataEngine.h"
 
+#include <assert.h>
+
 
 DataEngine::DataEngine(const size_t bucketCount):
     m_buckets(bucketCount)
@@ -8,12 +10,14 @@ DataEngine::DataEngine(const size_t bucketCount):
 
 DataEngine::~DataEngine()
 {
-    for (ListNode* node : m_buckets)
+    for (const AtomicNodePtr& bucket : m_buckets)
     {
+        const ListNode* node = bucket.load(std::memory_order_acquire);
+
         while (node != nullptr)
         {
-            ListNode* current = node;
-            node = node->next;
+            const ListNode* current = node;
+            node = node->m_next.load(std::memory_order_acquire);
             delete current;
         }
     }
@@ -23,16 +27,21 @@ DataEngine::~DataEngine()
 std::optional<std::string> DataEngine::get(const std::string_view key) const
 {
     const size_t buckedIdx = m_hash(key) % m_buckets.size();
-    ListNode* node = m_buckets[buckedIdx];
+    const ListNode* node = m_buckets[buckedIdx].load(std::memory_order_acquire);
+
     while (node != nullptr)
     {
-        if (node->key == key)
+        if (node->m_key == key)
         {
             m_successReads.fetch_add(1, std::memory_order_acq_rel);
-            return *node->value;
+
+            const auto ptrValueCopy = node->get_value_copy();
+            return *ptrValueCopy;
         }
-        node = node->next;
+
+        node = node->m_next.load(std::memory_order_acquire);
     }
+
     m_failedReads.fetch_add(1, std::memory_order_acq_rel);
     return {};
 }
@@ -40,38 +49,43 @@ std::optional<std::string> DataEngine::get(const std::string_view key) const
 void DataEngine::set(const std::string_view key, const std::string_view value)
 {
     const size_t buckedIdx = m_hash(key) % m_buckets.size();
-    ListNode* node = m_buckets[buckedIdx];
+    ListNode* node = m_buckets[buckedIdx].load(std::memory_order_acquire);
 
     if (node == nullptr)
     {
-        m_buckets[buckedIdx] = new ListNode{ std::string(key), std::make_shared<std::string>(value), nullptr };
+        m_buckets[buckedIdx].store(new ListNode{ std::move(std::string(key)), std::move(std::make_shared<const std::string>(value)), nullptr }, std::memory_order_release);
         return;
     }
 
     while (true)
     {
-        if (node->key == key)
+        if (node->m_key == key)
         {
-            *node->value = value;
+            node->m_ptrValue.store(std::make_shared<const std::string>(value), std::memory_order_release);
             return;
         }
-        if (node->next == nullptr)
+        if (node->m_next == nullptr)
         {
-            node->next = new ListNode{std::string(key), std::make_shared<std::string>(value), nullptr};
+            node->m_next.store(new ListNode{std::move(std::string(key)), std::move(std::make_shared<const std::string>(value)), nullptr}, std::memory_order_release);
             return;
         }
-        node = node->next;
+        node = node->m_next.load(std::memory_order_acquire);
     }
 }
 
 void DataEngine::enumerate(const std::function<EnumerateVisitorProc>& visitor) const
 {
-    for (ListNode* node : m_buckets)
+    for (const AtomicNodePtr& bucket : m_buckets)
     {
+        const ListNode* node = bucket.load(std::memory_order_acquire);
+
         while (node != nullptr)
         {
-            visitor(node->key, *node->value);
-            node = node->next;
+            const auto ptrValueCopy = node->get_value_copy();
+
+            visitor(node->m_key, *ptrValueCopy);
+
+            node = node->m_next.load(std::memory_order_acquire);
         }
     }
 }

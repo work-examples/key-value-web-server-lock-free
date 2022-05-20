@@ -31,9 +31,9 @@ size_t Persistency::store_data(const DataEngine& engine, const std::string& data
     DataSerializer::Document document;
 
     const std::function<DataEngine::EnumerateVisitorProc> visitor =
-        [&document, &recordCount](const std::string_view name, const std::string_view value)
+        [&document, &recordCount](const std::string_view key, const std::string_view value)
     {
-        document.add(name, value);
+        document.add(key, value);
         ++recordCount;
         return;
     };

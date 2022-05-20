@@ -12,7 +12,7 @@ set(DEPS_REQUIRED_RAPIDJSON_VERSION "1.1.0-b557259-p0" CACHE STRING "Required pa
 # ====================================
 
 # Set required C++ standard
-set(CMAKE_CXX_STANDARD 17)  # C++17 for `std::optional` & etc
+set(CMAKE_CXX_STANDARD 20)  # C++17 for `std::optional` & etc; C++20 for std::atomic<std::shared_ptr>
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 # ====================================

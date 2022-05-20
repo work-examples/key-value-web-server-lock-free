@@ -3,9 +3,9 @@
 **Example project:** An HTTP web server with a REST API for key-value storage.
 Internal data structure is lock-free. Server collects request statistics.
 
-**Language**: `C++17`  
+**Language**: `C++20`  
 **Dependencies**: `Boost v1.78.0`, `RapidJSON v1.1.0-b557259-p0`, `CrowCpp v1.0+2`, `PyInstaller` (optional)  
-**Software requirements**: `CMake 3.19+`, C++17 compatible compiler, `Python 3.7+`  
+**Software requirements**: `CMake 3.19+`, C++20 compatible compiler, `Python 3.7+`  
 **Operation systems**: `Windows`, `Linux`, `macOS`
 
 | Branch      | CI Build Status                                                                                                                                                                                                                                                      | CodeQL Code Analysis                                                                                                                                                                                                                                                                         | Microsoft C++ Code Analysis                                                                                                                                                                                                                                                   |
@@ -128,8 +128,12 @@ Finally, I settled on `CrowCpp`.
 The heart of the server engine uses fixed-size bucket array
 and single-linked list inside each bucket.
 This structure allows very simple implementation of searching and adding new elements.
-Without delete operation we can implement these operations lock-free without traditional loops.
-So the **maximum** complexity for operations would be:
+We don't need to remove keys from the storage so we can implement these operations lock-free without traditional loops.
+
+In fact implementation is **using `std::atomic<std::shared_ptr>` which is not lock-free** at least in MSVC 2019.
+I hope this is not a break of task requirements.
+
+The **maximum** complexity for operations would be:
 
 - search time: `O(1 + length(corresponding bucket list))`
 - insertion time: `O(1 + length(corresponding bucket list))`

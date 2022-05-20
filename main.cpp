@@ -23,6 +23,7 @@ int main(const int argc, const char* const* const argv)
     // =========================================================
 
     const size_t        expectedElementCount = 1000 * 1000;
+    const size_t        hashMapBucketCount = expectedElementCount * 2;
     const std::string   listenHost = "127.0.0.1";
     const std::uint16_t listenPort = 8000;
     const std::string   databaseFilename = "database.json";
@@ -30,7 +31,7 @@ int main(const int argc, const char* const* const argv)
 
     // =========================================================
 
-    DataEngine engine(expectedElementCount * 2);
+    DataEngine engine(hashMapBucketCount);
 
     LOG_INFO << "main: load data" << std::endl;
     const size_t loadedRecordCount = Persistency::initial_load_data(engine, databaseFilename);

@@ -18,7 +18,7 @@ public:
     struct AccessStatistics
     {
         IntegerCounter  m_successOperations = 0;
-        IntegerCounter  m_failedOperations = 0;
+        IntegerCounter  m_failedOperations  = 0;
     };
 
 public:
@@ -38,12 +38,21 @@ public:
 protected:
     struct ListNode
     {
-        std::string                     key;
-        std::shared_ptr<std::string>    value;
-        std::atomic<ListNode*>          next = ATOMIC_VAR_INIT(nullptr);
+        using SafeSharedStringPtr = std::atomic<std::shared_ptr<const std::string>>;
+
+        const std::string               m_key;
+        SafeSharedStringPtr             m_ptrValue;
+        std::atomic<ListNode*>          m_next = ATOMIC_VAR_INIT(nullptr);
+
+        std::shared_ptr<const std::string> get_value_copy() const
+        {
+            return m_ptrValue.load(std::memory_order_acquire);
+        }
     };
 
-    std::vector<std::atomic<ListNode*>> m_buckets;
+    using AtomicNodePtr = std::atomic<ListNode*>;
+
+    std::vector<AtomicNodePtr>          m_buckets;
     std::hash<std::string_view>         m_hash;
 
     // Global statistics:
