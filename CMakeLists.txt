@@ -76,6 +76,7 @@ set(HEADERS
 
 set(UTILS_HEADERS
     utils/stdlib.h
+    utils/stl.h
 )
 
 set(CMAKE_FILES
