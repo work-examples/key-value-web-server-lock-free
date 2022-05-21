@@ -207,7 +207,7 @@ Reply body example:
 
 `POST` <http://127.0.0.1:8000/api/records/{key-name}>
 
-Request body:
+Request body example:
 
 ```json
 {
@@ -243,7 +243,8 @@ In case of error all API endpoints return HTTP error code 4xx or 5xx and the spe
 
 ```json
 {
-    "error": "The key was not found"
+    "name": "name 1",
+    "error": "Item not found"
 }
 ```
 
