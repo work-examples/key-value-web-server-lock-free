@@ -33,6 +33,8 @@ public:
     DataEngine(const size_t bucketCount);
     ~DataEngine();
 
+    bool is_lock_free() const;
+
     std::optional<String> get(const std::string_view key) const;
 
     void set(const std::string_view key, const std::string_view value);
@@ -55,6 +57,9 @@ protected:
         AtomicSharedConstStringPtr      m_ptrValue;
         std::atomic<ListNode*>          m_next = nullptr;
         NodeAllocator                   m_allocator;
+
+        //static_assert(AtomicSharedConstStringPtr::is_always_lock_free);
+        static_assert(std::atomic<ListNode*>::is_always_lock_free);
 
     public:
         ListNode(const NodeAllocator& allocator, String&& key, std::shared_ptr<const String>&& ptrValue) :
@@ -89,4 +94,7 @@ protected:
     // Global statistics:
     mutable std::atomic<IntegerCounter> m_successReads = 0;
     mutable std::atomic<IntegerCounter> m_failedReads  = 0;
+
+    static_assert(AtomicNodePtr::is_always_lock_free);
+    static_assert(std::atomic<IntegerCounter>::is_always_lock_free);
 };

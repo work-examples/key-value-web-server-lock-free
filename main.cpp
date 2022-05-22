@@ -33,6 +33,16 @@ int main(const int argc, const char* const* const argv)
 
     DataEngine engine(hashMapBucketCount);
 
+    const bool lock_free = engine.is_lock_free();
+    if (lock_free)
+    {
+        LOG_INFO << "main: Engine implementation is lock free (except memory allocations)" << std::endl;
+    }
+    else
+    {
+        LOG_WARN << "main: WARNING! Engine implementation IS NOT LOCK-FREE!" << std::endl;
+    }
+
     LOG_INFO << "main: load data..." << std::endl;
     const size_t loadedRecordCount = Persistency::initial_load_data(engine, databaseFilename);
     LOG_INFO << "main: loaded " << loadedRecordCount << " DB records from file " << databaseFilename << std::endl;

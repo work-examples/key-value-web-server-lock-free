@@ -27,6 +27,34 @@ DataEngine::~DataEngine()
     m_buckets.clear();
 }
 
+bool DataEngine::is_lock_free() const
+{
+    if (!m_successReads.is_lock_free())
+    {
+        return false;
+    }
+
+    AtomicNodePtr ptrNode;
+    if (!ptrNode.is_lock_free())
+    {
+        return false;
+    }
+
+    std::atomic<ListNode*> ptrNode2;
+    if (!ptrNode2.is_lock_free())
+    {
+        return false;
+    }
+
+    ListNode::AtomicSharedConstStringPtr ptrValue;
+    if (!ptrValue.is_lock_free())
+    {
+        return false;
+    }
+
+    return true;
+}
+
 std::optional<DataEngine::String> DataEngine::get(const std::string_view key) const
 {
     const size_t buckedIdx = Hash()(key) % m_buckets.size();

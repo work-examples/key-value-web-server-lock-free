@@ -157,7 +157,8 @@ The solution also makes heavy use of move semantics.
 #### Memory allocation
 
 Lock-free requirement for memory allocation is partially implemented.
-I.e. storage engine uses custom memory allocators. Different threads are getting different instances of allocators.
+Storage key-value engine uses custom memory allocators.
+Different threads are getting different instances of allocators, i.e. stateful allocators are supported.
 But using different memory heaps is not implemented now.
 
 Threads also may block each other during key-value replacement while deallocating memory allocated from another thread.
