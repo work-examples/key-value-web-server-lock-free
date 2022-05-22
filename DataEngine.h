@@ -54,9 +54,9 @@ protected:
     };
 
     using AtomicNodePtr = std::atomic<ListNode*>;
+    using Hash = std::hash<std::string_view>;
 
     std::vector<AtomicNodePtr>          m_buckets;
-    std::hash<std::string_view>         m_hash;
 
     // Global statistics:
     mutable std::atomic<IntegerCounter> m_successReads = ATOMIC_VAR_INIT(0);

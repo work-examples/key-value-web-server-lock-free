@@ -26,7 +26,7 @@ DataEngine::~DataEngine()
 
 std::optional<std::string> DataEngine::get(const std::string_view key) const
 {
-    const size_t buckedIdx = m_hash(key) % m_buckets.size();
+    const size_t buckedIdx = Hash()(key) % m_buckets.size();
     const ListNode* node = m_buckets[buckedIdx].load(std::memory_order_acquire);
 
     while (node != nullptr)
@@ -52,7 +52,7 @@ void DataEngine::set(const std::string_view key, const std::string_view value)
         new ListNode{ std::string(key), std::make_shared<const std::string>(value), nullptr }
     );
 
-    const size_t buckedIdx = m_hash(key) % m_buckets.size();
+    const size_t buckedIdx = Hash()(key) % m_buckets.size();
     ListNode* node = nullptr;
 
     const bool exchangedFirst = m_buckets[buckedIdx].compare_exchange_strong(node, ptrNewNode.get(), std::memory_order_acq_rel, std::memory_order_acquire);
