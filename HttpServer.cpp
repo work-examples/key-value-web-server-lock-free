@@ -91,14 +91,14 @@ void HttpServer::setup_routing(DataEngine& engine)
                     return crow::response(crow::status::BAD_REQUEST, body);
                 }
 
-                const std::optional<std::string> value = engine.get(name);
+                const std::optional<DataEngine::String> value = engine.get(name);
                 if (!value.has_value())
                 {
                     body.add("error"sv, "Item not found"sv);
                     return crow::response(crow::status::NOT_FOUND, body);
                 }
 
-                body.add("value"sv, *value);
+                body.add("value"sv, std::string_view(*value));
                 return crow::response(crow::status::OK, body);
             }
             catch (...)

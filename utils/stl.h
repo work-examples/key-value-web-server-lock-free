@@ -1,5 +1,33 @@
 #pragma once
 
+
+#include <memory>
+
+
+namespace std_extra
+{
+    template<typename Alloc, typename... Args>
+    typename std::allocator_traits<Alloc>::value_type* allocate_new(Alloc& alloc, Args&&... args)
+    {
+        using AllocTraits = std::allocator_traits<Alloc>;
+
+        typename AllocTraits::value_type* const ptr = AllocTraits::allocate(alloc, 1);
+
+        try
+        {
+            AllocTraits::construct(alloc, ptr, std::forward<Args>(args)...);
+        }
+        catch (...)
+        {
+            AllocTraits::deallocate(alloc, ptr, 1);
+            throw;
+        }
+
+        return ptr;
+    }
+}
+
+
 // Temporary implementation of `std::atomic<std::shared_ptr>`
 // GCC supports this this template specialization since version 12 (version 11.3 does not support)
 // CLang supports this this template specialization only in trunk on 2022-05-20 (version 14.0 does not support)

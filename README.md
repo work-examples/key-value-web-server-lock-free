@@ -130,9 +130,6 @@ and single-linked list inside each bucket.
 This structure allows very simple implementation of searching and adding new elements.
 We don't need to remove keys from the storage so we can implement these operations lock-free without traditional loops.
 
-In fact implementation is **using `std::atomic<std::shared_ptr>` which is not lock-free** at least in MSVC 2019.
-I hope this is not a break of task requirements.
-
 The **maximum** complexity for operations would be:
 
 - search time: `O(1 + length(corresponding bucket list))`
@@ -156,6 +153,22 @@ It also speeds up compilation by limiting the number of `.cpp` files
 compiled with included complex C++ templates.
 
 The solution also makes heavy use of move semantics.
+
+#### Memory allocation
+
+Lock-free requirement for memory allocation is partially implemented.
+I.e. storage engine uses custom memory allocators. Different threads are getting different instances of allocators.
+But using different memory heaps is not implemented now.
+
+Threads also may block each other during key-value replacement while deallocating memory allocated from another thread.
+
+HTTP server implementation, JSON parser do not use custom memory allocators and may block threads.
+
+#### Known implementation disadvantages
+
+- usage of `std::atomic<std::shared_ptr>` which is not lock-free in MSVC 2019
+  and is not implemented in stable version of GCC
+- potential blocking in memory allocations
 
 <a name="compile_and_run"></a>
 

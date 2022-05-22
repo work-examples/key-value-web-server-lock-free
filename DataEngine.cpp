@@ -1,4 +1,7 @@
 #include "DataEngine.h"
+#include "AllocatorFactory.h"
+
+#include "utils/stl.h"
 
 #include <assert.h>
 
@@ -12,19 +15,19 @@ DataEngine::~DataEngine()
 {
     for (const AtomicNodePtr& bucket : m_buckets)
     {
-        const ListNode* node = bucket.load(std::memory_order_acquire);
+        ListNode* node = bucket.load(std::memory_order_acquire);
 
         while (node != nullptr)
         {
-            const ListNode* current = node;
+            ListNode* current = node;
             node = node->m_next.load(std::memory_order_acquire);
-            delete current;
+            current->delete_self();
         }
     }
     m_buckets.clear();
 }
 
-std::optional<std::string> DataEngine::get(const std::string_view key) const
+std::optional<DataEngine::String> DataEngine::get(const std::string_view key) const
 {
     const size_t buckedIdx = Hash()(key) % m_buckets.size();
     const ListNode* node = m_buckets[buckedIdx].load(std::memory_order_acquire);
@@ -46,11 +49,30 @@ std::optional<std::string> DataEngine::get(const std::string_view key) const
     return {};
 }
 
+DataEngine::NodeUniquePtr DataEngine::create_node(const std::string_view key, const std::string_view value)
+{
+    ListNode::NodeAllocator allocator = AllocatorFactory::get_allocator<ListNode>();
+
+    NodeDeleter* deleter = [](ListNode* const ptr)
+    {
+        ptr->delete_self();
+        return;
+    };
+
+    ListNode* raw_ptr = std_extra::allocate_new(
+        allocator,
+        allocator,
+        String(key, allocator),
+        std::allocate_shared<const String>(allocator, String(value, allocator))
+    );
+
+    NodeUniquePtr ptrNewNode = std::unique_ptr<ListNode, NodeDeleter*>(raw_ptr, deleter);
+    return ptrNewNode;
+}
+
 void DataEngine::set(const std::string_view key, const std::string_view value)
 {
-    std::unique_ptr<ListNode> ptrNewNode = std::unique_ptr<ListNode>(
-        new ListNode{ std::string(key), std::make_shared<const std::string>(value), nullptr }
-    );
+    NodeUniquePtr ptrNewNode = create_node(key, value);
 
     const size_t buckedIdx = Hash()(key) % m_buckets.size();
     ListNode* node = nullptr;

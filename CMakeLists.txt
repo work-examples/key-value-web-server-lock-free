@@ -57,6 +57,8 @@ message(VERBOSE "RapidJSON_VERSION: ${RapidJSON_VERSION}")
 
 set(SOURCES
     main.cpp
+    Allocator.cpp
+    AllocatorFactory.cpp
     DataEngine.cpp
     DataSerializer.cpp
     Logger.cpp
@@ -66,6 +68,8 @@ set(SOURCES
 )
 
 set(HEADERS
+    Allocator.h
+    AllocatorFactory.h
     DataEngine.h
     DataSerializer.h
     Logger.h
