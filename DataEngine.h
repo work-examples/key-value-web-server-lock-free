@@ -45,9 +45,9 @@ protected:
 
         const std::string               m_key;
         AtomicSharedConstStringPtr      m_ptrValue;
-        std::atomic<ListNode*>          m_next = ATOMIC_VAR_INIT(nullptr);
+        std::atomic<ListNode*>          m_next = nullptr;
 
-        std::shared_ptr<const std::string> get_value_copy_ref() const
+        std::shared_ptr<const std::string> get_value_const_ref() const
         {
             return m_ptrValue.load(std::memory_order_acquire);
         }
@@ -59,6 +59,6 @@ protected:
     std::vector<AtomicNodePtr>          m_buckets;
 
     // Global statistics:
-    mutable std::atomic<IntegerCounter> m_successReads = ATOMIC_VAR_INIT(0);
-    mutable std::atomic<IntegerCounter> m_failedReads  = ATOMIC_VAR_INIT(0);
+    mutable std::atomic<IntegerCounter> m_successReads = 0;
+    mutable std::atomic<IntegerCounter> m_failedReads  = 0;
 };
