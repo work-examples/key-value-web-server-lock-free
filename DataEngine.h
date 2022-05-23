@@ -70,7 +70,7 @@ protected:
         void delete_self()
         {
             NodeAllocator alloc(m_allocator);
-            std::allocator_traits<NodeAllocator>::destroy(alloc, this);
+            std::allocator_traits<NodeAllocator>::destroy(alloc, std::to_address(this));
             std::allocator_traits<NodeAllocator>::deallocate(alloc, this, 1);
         }
 

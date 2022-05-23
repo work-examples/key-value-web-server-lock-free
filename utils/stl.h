@@ -15,7 +15,7 @@ namespace std_extra
 
         try
         {
-            AllocTraits::construct(alloc, ptr, std::forward<Args>(args)...);
+            AllocTraits::construct(alloc, std::to_address(ptr), std::forward<Args>(args)...);
         }
         catch (...)
         {
