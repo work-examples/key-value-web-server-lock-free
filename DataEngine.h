@@ -76,7 +76,7 @@ protected:
 
         std::shared_ptr<const String> get_value_const_ref() const
         {
-            return m_ptrValue.load(std::memory_order_acquire);
+            return m_ptrValue.load(std::memory_order_relaxed);
         }
     };
 

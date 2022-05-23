@@ -15,12 +15,12 @@ DataEngine::~DataEngine()
 {
     for (const AtomicNodePtr& bucket : m_buckets)
     {
-        ListNode* node = bucket.load(std::memory_order_acquire);
+        ListNode* node = bucket.load(std::memory_order_relaxed);
 
         while (node != nullptr)
         {
             ListNode* current = node;
-            node = node->m_next.load(std::memory_order_acquire);
+            node = node->m_next.load(std::memory_order_relaxed);
             current->delete_self();
         }
     }
@@ -58,22 +58,22 @@ bool DataEngine::is_lock_free() const
 std::optional<DataEngine::String> DataEngine::get(const std::string_view key) const
 {
     const size_t buckedIdx = Hash()(key) % m_buckets.size();
-    const ListNode* node = m_buckets[buckedIdx].load(std::memory_order_acquire);
+    const ListNode* node = m_buckets[buckedIdx].load(std::memory_order_relaxed);
 
     while (node != nullptr)
     {
         if (node->m_key == key)
         {
-            m_successReads.fetch_add(1, std::memory_order_acq_rel);
+            m_successReads.fetch_add(1, std::memory_order_relaxed);
 
             const auto ptrValueCopy = node->get_value_const_ref();
             return *ptrValueCopy;
         }
 
-        node = node->m_next.load(std::memory_order_acquire);
+        node = node->m_next.load(std::memory_order_relaxed);
     }
 
-    m_failedReads.fetch_add(1, std::memory_order_acq_rel);
+    m_failedReads.fetch_add(1, std::memory_order_relaxed);
     return {};
 }
 
@@ -105,10 +105,11 @@ void DataEngine::set(const std::string_view key, const std::string_view value)
     const size_t buckedIdx = Hash()(key) % m_buckets.size();
     ListNode* node = nullptr;
 
-    const bool exchangedFirst = m_buckets[buckedIdx].compare_exchange_strong(node, ptrNewNode.get(), std::memory_order_acq_rel, std::memory_order_acquire);
+    const bool exchangedFirst = m_buckets[buckedIdx].compare_exchange_strong(node, ptrNewNode.get(), std::memory_order_relaxed, std::memory_order_relaxed);
     if (exchangedFirst)
     {
         // we have put the first element in the bucket
+        assert(node == nullptr);
         ptrNewNode.release(); // do not own the node any more. Its owner is the bucket list now.
         return;
     }
@@ -118,15 +119,16 @@ void DataEngine::set(const std::string_view key, const std::string_view value)
     {
         if (node->m_key == key)
         {
-            node->m_ptrValue.store(ptrNewNode->m_ptrValue, std::memory_order_release);
+            node->m_ptrValue.store(ptrNewNode->m_ptrValue, std::memory_order_relaxed);
             return; // ptrNewNode is deallocated automatically here
         }
 
         ListNode* nextNode = nullptr;
-        const bool exchanged = node->m_next.compare_exchange_strong(nextNode, ptrNewNode.get(), std::memory_order_acq_rel, std::memory_order_acquire);
+        const bool exchanged = node->m_next.compare_exchange_strong(nextNode, ptrNewNode.get(), std::memory_order_relaxed, std::memory_order_relaxed);
         if (exchanged)
         {
             // we have put the element at the end of the bucket list
+            assert(nextNode == nullptr);
             ptrNewNode.release(); // do not own the node any more. Its owner is the bucket list now.
             return;
         }
@@ -139,7 +141,7 @@ void DataEngine::enumerate(const std::function<EnumerateVisitorProc>& visitor) c
 {
     for (const AtomicNodePtr& bucket : m_buckets)
     {
-        const ListNode* node = bucket.load(std::memory_order_acquire);
+        const ListNode* node = bucket.load(std::memory_order_relaxed);
 
         while (node != nullptr)
         {
@@ -147,7 +149,7 @@ void DataEngine::enumerate(const std::function<EnumerateVisitorProc>& visitor) c
 
             visitor(node->m_key, *ptrValueCopy);
 
-            node = node->m_next.load(std::memory_order_acquire);
+            node = node->m_next.load(std::memory_order_relaxed);
         }
     }
 }
@@ -155,5 +157,5 @@ void DataEngine::enumerate(const std::function<EnumerateVisitorProc>& visitor) c
 DataEngine::AccessStatistics DataEngine::get_read_statistics() const
 {
     // No need in full consistency here
-    return { m_successReads.load(std::memory_order_acquire), m_failedReads.load(std::memory_order_acquire) };
+    return { m_successReads.load(std::memory_order_relaxed), m_failedReads.load(std::memory_order_relaxed) };
 }
