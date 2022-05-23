@@ -10,7 +10,7 @@
 const AllocatorFactory::DefaultAllocator& AllocatorFactory::get_current_thread_allocator()
 {
     static std::shared_mutex protect;
-    static std::unordered_map<std::thread::id, DefaultAllocator> allocators(std::thread::hardware_concurrency() * 2);
+    static std::unordered_map<std::thread::id, DefaultAllocator> allocators;
 
     const std::thread::id threadId = std::this_thread::get_id();
 
